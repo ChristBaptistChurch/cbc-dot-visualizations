@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Dynamic venn.js example</title>
+    <style>
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div style="float:left;padding:20px">
+        <table>
+            <tr>
+                <td>|A|</td>
+                <td>
+                    <input class="input-mini venn_area" id="A" type="number" value="16">
+                </td>
+            </tr>
+            <tr>
+                <td>|B|</td>
+                <td>
+                    <input class="input-mini venn_area" id="B" type="number" value="16">
+                </td>
+            </tr>
+            <tr>
+                <td>|C|</td>
+                <td>
+                    <input class="input-mini venn_area" id="C" type="number" value="12">
+                </td>
+            </tr>
+            <tr>
+                <td>|A&#8745B|</td>
+                <td>
+                    <input class="input-mini venn_area" id="A,B" type="number" value="4">
+                </td>
+            </tr>
+            <tr>
+                <td>|A&#8745C|</td>
+                <td>
+                    <input class="input-mini venn_area" id="A,C" type="number" value="4">
+                </td>
+            </tr>
+            <tr>
+                <td>|B&#8745C|</td>
+                <td>
+                    <input class="input-mini venn_area" id="B,C" type="number" value="3">
+                </td>
+            </tr>
+            <tr>
+                <td>|A&#8745B&#8745C|&nbsp</td>
+                <td>
+                    <input class="input-mini venn_area" id="A,B,C" type="number" value="2">
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div id="venn"></div>
+    <div style="clear: both;"></div>
+
+</body>
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script src="./venn.js"></script>
+<script>
+
+    function getSetIntersections() {
+        areas = d3.selectAll(".venn_area").nodes().map(
+            function (element) {
+                return {
+                    sets: element.id.split(","),
+                    size: parseFloat(element.value)
+                };
+            });
+        return areas;
+    }
+
+    function getLineSlope(startPoint, endPoint) {
+        return startPoint.x - endPoint.x /
+            startPoint.y - endPoint.y;
+    }
+
+    function calculateEndPoint(startPoint, length, slope) {
+        // slope = tangent of an angle
+    }
+
+    // draw the initial set
+    var chart = venn.VennDiagram()
+        .width(1000)
+        .height(600);
+
+    function draw() {
+        d3.select("#venn").datum(getSetIntersections()).call(chart);
+        // tweak style
+        var colours = ['black', 'red', 'blue'];
+        d3.selectAll("#venn .venn-circle path")
+            .style("fill-opacity", 0)
+            .style("stroke-width", 5)
+            .style("stroke-opacity", .5)
+            .style("stroke", function (d, i) { return colours[i]; });
+
+        d3.selectAll("#venn .venn-circle text")
+            .style("fill", function (d, i) { return colours[i] })
+            .style("font-size", "32px")
+            .style("font-weight", "100");
+
+        let AC_midpoint = {
+            x: (chart.circles['A'].x + chart.circles['C'].x) / 2,
+            y: (chart.circles['A'].y + chart.circles['C'].y) / 2
+        }
+
+        let A_C_tangent = getLineSlope(chart.circles['A'], chart.circles['C']);
+        
+        let Full_Hypotenuse = Math.hypot(chart.circles['A'].x - chart.circles['C'].x, chart.circles['A'].y - chart.circles['C'].y);
+        
+        let A_C_Cosine = Math.abs(chart.circles['A'].y - chart.circles['C'].y) / Full_Hypotenuse;
+        let A_C_radians = Math.acos(A_C_Cosine);
+
+        // let A_C_cosine = 1/Math.sqrt(A_C_tangent^2);
+
+        let A_C_adjacent = A_C_Cosine * chart.circles['A'].radius;
+        let A_C_opposite = Math.sqrt((Math.pow(chart.circles['A'].radius, 2)) - Math.pow(A_C_adjacent, 2));
+
+
+
+        let A_extent_towards_C = {
+            x: chart.circles['A'].x + A_C_opposite,
+            y: chart.circles['A'].y - A_C_adjacent
+        }
+
+        A_C_adjacent = A_C_Cosine * chart.circles['C'].radius;
+        A_C_opposite = Math.sqrt((Math.pow(chart.circles['C'].radius, 2)) - Math.pow(A_C_adjacent, 2));
+
+        let C_extent_towards_A = {
+            x: chart.circles['C'].x - A_C_opposite,
+            y: chart.circles['C'].y + A_C_adjacent
+        }
+
+        // d3.select('g[data-venn-sets="A"').append('line').style('stroke', 'black')
+        //     .attr("x1", chart.circles['A'].x)
+        //     .attr("y1", chart.circles['A'].y)
+        //     .attr("x2", A_extent_towards_C.x)
+        //     .attr("y2", A_extent_towards_C.y
+
+        C_A_Intersect_Midpoint = {
+            x: (A_extent_towards_C.x + C_extent_towards_A.x) / 2,
+            y: (A_extent_towards_C.y + C_extent_towards_A.y) / 2
+        }
+
+        let DISTANCE_TO_MID_INTERSECTION = venn.distance(chart.circles['C'], C_A_Intersect_Midpoint);
+        let LONG_RADIUS_OF_INTERSECTION = Math.sqrt(Math.pow(chart.circles['C'].radius, 2) - Math.pow(DISTANCE_TO_MID_INTERSECTION, 2));
+
+        let intersection_top = {
+            x: C_A_Intersect_Midpoint.x + Math.cos(A_C_radians + (-180 * Math.PI / 180)) * LONG_RADIUS_OF_INTERSECTION,
+            y: C_A_Intersect_Midpoint.y + Math.sin(A_C_radians + (-180 * Math.PI / 180)) * LONG_RADIUS_OF_INTERSECTION
+        }
+
+        let intersection_bottom = {
+            x: C_A_Intersect_Midpoint.x + Math.cos(A_C_radians + (0 * Math.PI / 180)) * LONG_RADIUS_OF_INTERSECTION,
+            y: C_A_Intersect_Midpoint.y + Math.sin(A_C_radians + (0 * Math.PI / 180)) * LONG_RADIUS_OF_INTERSECTION
+        }
+        
+        d3.select('g[data-venn-sets="A"').append('line').style('stroke', 'green')
+            .attr("x1", C_A_Intersect_Midpoint.x)
+            .attr("y1", C_A_Intersect_Midpoint.y)
+            .attr("x2", chart.circles['A'].x)
+            .attr("y2", chart.circles['A'].y)
+
+        d3.select('g[data-venn-sets="A"').append('line').style('stroke', 'blue')
+            .attr("x1", intersection_bottom.x)
+            .attr("y1", intersection_bottom.y)
+            .attr("x2", intersection_top.x)
+            .attr("y2", intersection_top.y)
+
+        let canAddMore = true;
+        let currentX;
+        let currentY;
+        while (canAddMore) {
+            d3.select('g[data-venn-sets="A"').append('circle')
+            canAddMore = false;
+        }
+    }
+
+
+
+    draw();
+    // redraw the sets on any change in input
+    d3.selectAll("input").on("change", draw);
+
+</script>
+
+</html>

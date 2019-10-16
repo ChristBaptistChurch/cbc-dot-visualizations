@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Venn Demo</title>
+    <style>
+        svg {
+            width: 100%;
+            height: 100vh;
+        }
+
+        circle {
+            fill: #c8c8c8;
+            /* fill: rgb(255, 255, 255); */
+            /* stroke: black; */
+        }
+    </style>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+</head>
+
+<body>
+
+    <!-- https://math.stackexchange.com/questions/1702317/finding-end-point-of-an-arc-in-cartesian-coordinates-while-radius-arc-length-an -->
+    <svg>
+    </svg>
+
+    <script>
+        let centerX = 960;
+        let centerY = 490;
+
+        /**
+         * getArc returns an arc for the given circle
+         * */
+        function getArc(cx, cy, r, start, end, sweepFlag = 1) {
+            const endAngle = end * (Math.PI / 180);
+            const startAngle = start * (Math.PI / 180);
+            let largeArcFlag = 0;
+
+            if ((endAngle - startAngle) >= Math.PI) {
+                largeArcFlag = 1;
+            }
+
+            let startX = cx + (r * Math.cos(startAngle));
+            let startY = cy + (r * Math.sin(startAngle));
+            let endX = startX - (r * Math.cos(startAngle)) + (r * Math.cos(startAngle + (endAngle - startAngle)));
+            let endY = startY - (r * Math.sin(startAngle)) + (r * Math.sin(startAngle + (endAngle - startAngle)));
+            return `M ${startX} ${startY} A ${r}, ${r} 0 ${largeArcFlag} ${sweepFlag} ${endX} ${endY}`;
+        }
+
+        let svg = d3.select('svg');
+
+        // Rings
+        svg.append('path')
+            .attr('d', () => {
+                return getArc(centerX, centerY, 125, -50, 120);
+            })
+            .attr('style', 'fill: none; stroke: rgba(151,0,46,.7); stroke-width: 25px;');
+
+        svg.append('path')
+            .attr('d', () => {
+                return getArc(centerX, centerY, 125, 70, 240);
+            })
+            .attr('style', 'fill: none; stroke: rgba(0,90,64,.7); stroke-width: 25px;');
+
+        svg.append('path')
+            .attr('d', () => {
+                return getArc(centerX, centerY, 125, 190, 360);
+            })
+            .attr('style', 'fill: none; stroke: rgba(0,55,99,.7); stroke-width: 25px;')
+
+        // Loving BG
+        // svg.append('path')
+        //     .attr('d', () => {
+        //         return `${getArc(centerX, centerY, 138, -50, 120)}
+        //         L ${centerX + (2000 * Math.cos(120*(Math.PI/180)))} ${centerY + (2000 * Math.sin(120*(Math.PI/180)))}
+        //         ${getArc(centerX, centerY, 2000, 120, -50, 0)}
+        //         L ${centerX + (138 * Math.cos(-50*(Math.PI/180)))} ${centerY + (138 * Math.sin(-50*(Math.PI/180)))}`
+        //     })
+        //     .attr('style', 'fill: rgba(151,0,46,.7);')
+
+        // // Growing BG
+        // svg.append('path')
+        //     .attr('d', () => {
+        //         return `${getArc(centerX, centerY, 138, 70, 240)}
+        //         L ${centerX + (2000 * Math.cos(240*(Math.PI/180)))} ${centerY + (2000 * Math.sin(240*(Math.PI/180)))}
+        //         ${getArc(centerX, centerY, 2000, 240, 70, 0)}
+        //         L ${centerX + (138 * Math.cos(70*(Math.PI/180)))} ${centerY + (138 * Math.sin(70*(Math.PI/180)))}`
+        //     })
+        //     .attr('style', 'fill: rgba(0,90,64,.7);')
+
+        // // Sending BG
+        // svg.append('path')
+        //     .attr('d', () => {
+        //         return `${getArc(centerX, centerY, 138, 190, 360)}
+        //         L ${centerX + (2000 * Math.cos(360*(Math.PI/180)))} ${centerY + (2000 * Math.sin(360*(Math.PI/180)))}
+        //         ${getArc(centerX, centerY, 2000, 360, 190, 0)}
+        //         L ${centerX + (138 * Math.cos(190*(Math.PI/180)))} ${centerY + (138 * Math.sin(190*(Math.PI/180)))}`
+        //     })
+        //     .attr('style', 'fill: rgba(0,55,99,.7);')
+
+        let dotRadius = 8;
+
+        let circleRadius = 155;
+        let rowsOfDotsToDraw = 20;
+
+        let counter = 0;
+
+        // Loving
+        while (circleRadius < (155 + (dotRadius * 2 * rowsOfDotsToDraw))) {
+            let i = 4;
+            let degreesOfSection = 64;
+            let arcLengthOfSection = (degreesOfSection / 360) * (2 * Math.PI * circleRadius);
+            let arcLengthBetweenDots = dotRadius * 2;
+            let incrementToPlot = (arcLengthBetweenDots / (2 * Math.PI * circleRadius)) * 360;
+
+            while (i < degreesOfSection) {
+                let radians = i * (Math.PI / 180);
+                let x = centerX + (circleRadius * Math.cos(radians));
+                let y = centerY + (circleRadius * Math.sin(radians));
+                svg.append('circle')
+                    .attr('r', dotRadius)
+                    .attr('cx', x)
+                    .attr('cy', y)
+
+                counter ++;
+
+                i += incrementToPlot;
+            }
+
+            circleRadius += dotRadius * 2;
+        }
+
+        // Loving and Growing
+        circleRadius = 155;
+
+        while (circleRadius < (155 + (dotRadius * 2 * rowsOfDotsToDraw))) {
+            let i = 74;
+            let degreesOfSection = 117;
+            let arcLengthOfSection = (degreesOfSection / 360) * (2 * Math.PI * circleRadius);
+            let arcLengthBetweenDots = dotRadius * 2;
+            let incrementToPlot = (arcLengthBetweenDots / (2 * Math.PI * circleRadius)) * 360;
+
+            while (i < degreesOfSection) {
+                let radians = i * (Math.PI / 180);
+                let x = centerX + (circleRadius * Math.cos(radians));
+                let y = centerY + (circleRadius * Math.sin(radians));
+                svg.append('circle')
+                    .attr('r', dotRadius)
+                    .attr('cx', x)
+                    .attr('cy', y)
+
+                counter ++;
+
+                i += incrementToPlot;
+            }
+
+            circleRadius += dotRadius * 2;
+        }
+
+
+        // Growing
+        circleRadius = 155;
+
+        while (circleRadius < (155 + (dotRadius * 2 * rowsOfDotsToDraw))) {
+            let i = 124;
+            let degreesOfSection = 184;
+            let arcLengthOfSection = (degreesOfSection / 360) * (2 * Math.PI * circleRadius);
+            let arcLengthBetweenDots = dotRadius * 2;
+            let incrementToPlot = (arcLengthBetweenDots / (2 * Math.PI * circleRadius)) * 360;
+
+            while (i < degreesOfSection) {
+                let radians = i * (Math.PI / 180);
+                let x = centerX + (circleRadius * Math.cos(radians));
+                let y = centerY + (circleRadius * Math.sin(radians));
+                svg.append('circle')
+                    .attr('r', dotRadius)
+                    .attr('cx', x)
+                    .attr('cy', y)
+
+                counter ++;
+
+                i += incrementToPlot;
+            }
+
+            circleRadius += dotRadius * 2;
+        }
+
+        // Growing and Sending
+        circleRadius = 155;
+
+        while (circleRadius < (155 + (dotRadius * 2 * rowsOfDotsToDraw))) {
+            let i = 194;
+            let degreesOfSection = 236;
+            let arcLengthOfSection = (degreesOfSection / 360) * (2 * Math.PI * circleRadius);
+            let arcLengthBetweenDots = dotRadius * 2;
+            let incrementToPlot = (arcLengthBetweenDots / (2 * Math.PI * circleRadius)) * 360;
+
+            while (i < degreesOfSection) {
+                let radians = i * (Math.PI / 180);
+                let x = centerX + (circleRadius * Math.cos(radians));
+                let y = centerY + (circleRadius * Math.sin(radians));
+                svg.append('circle')
+                    .attr('r', dotRadius)
+                    .attr('cx', x)
+                    .attr('cy', y)
+
+                counter ++;
+
+                i += incrementToPlot;
+            }
+
+            circleRadius += dotRadius * 2;
+        }
+
+
+        // Sending
+        circleRadius = 155;
+
+        while (circleRadius < (155 + (dotRadius * 2 * rowsOfDotsToDraw))) {
+            let i = 244;
+            let degreesOfSection = 304;
+            let arcLengthOfSection = (degreesOfSection / 360) * (2 * Math.PI * circleRadius);
+            let arcLengthBetweenDots = dotRadius * 2;
+            let incrementToPlot = (arcLengthBetweenDots / (2 * Math.PI * circleRadius)) * 360;
+
+            while (i < degreesOfSection) {
+                let radians = i * (Math.PI / 180);
+                let x = centerX + (circleRadius * Math.cos(radians));
+                let y = centerY + (circleRadius * Math.sin(radians));
+                svg.append('circle')
+                    .attr('r', dotRadius)
+                    .attr('cx', x)
+                    .attr('cy', y)
+
+                counter ++;
+
+                i += incrementToPlot;
+            }
+
+            circleRadius += dotRadius * 2;
+        }
+
+
+        // Sending and Loving
+        circleRadius = 155;
+
+        while (circleRadius < (155 + (dotRadius * 2 * rowsOfDotsToDraw))) {
+            let i = 314;
+            let degreesOfSection = 356;
+            let arcLengthOfSection = (degreesOfSection / 360) * (2 * Math.PI * circleRadius);
+            let arcLengthBetweenDots = dotRadius * 2;
+            let incrementToPlot = (arcLengthBetweenDots / (2 * Math.PI * circleRadius)) * 360;
+
+            while (i < degreesOfSection) {
+                let radians = i * (Math.PI / 180);
+                let x = centerX + (circleRadius * Math.cos(radians));
+                let y = centerY + (circleRadius * Math.sin(radians));
+                svg.append('circle')
+                    .attr('r', dotRadius)
+                    .attr('cx', x)
+                    .attr('cy', y)
+
+                counter ++;
+
+                i += incrementToPlot;
+            }
+
+            circleRadius += dotRadius * 2;
+        }
+
+        console.log(counter);
+    </script>
+</body>
+
+</html>

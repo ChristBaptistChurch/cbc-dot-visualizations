@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Circle Chart</title>
+    <style>
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 14px;
+            margin: 0px;
+        }
+
+        .dot {
+            fill: #C8C8C8;
+        }
+
+        text {
+            font-size: 24px;
+        }
+
+        .filter-60 {
+            fill: #97002e;
+        }
+
+        .bucket-label,.title {
+            font-family: 'BlairMdITC TT';
+            dominant-baseline: hanging;
+            text-anchor: middle;
+        }
+
+        .filter-text {
+            dominant-baseline: middle;
+        }
+
+        .bucket-line {
+            stroke-width: 3;
+            stroke: black;
+        }
+    </style>
+</head>
+
+<body>
+
+</body>
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<!-- <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script> -->
+<script>
+    let dataViews = getQueryVariable('dataviews').split(',');
+    let filters = getQueryVariable('filters').split(',');
+    
+    let buckets = [
+    ]
+    let filterPeople = {};
+
+    function getQueryVariable(variable) {
+        var query = window.location.search.substring(1);
+        var vars = query.split('&');
+        for (var i = 0; i < vars.length; i++) {
+            var pair = vars[i].split('=');
+            if (decodeURIComponent(pair[0]) == variable) {
+                return decodeURIComponent(pair[1]);
+            }
+        }
+        console.log('Query variable %s not found', variable);
+    }
+
+    function drawChart() {
+
+        const dotRadius = 10;
+        const dotsPerRow = 10;
+
+        const margins = 100;
+
+        const bucketWidth = dotsPerRow * dotRadius * 2;
+        
+        let scaleTop = 0;
+
+
+        function calculatePositions(bucketsToCalculate) {
+            let xScaleFactor = 1;
+            let yScaleFactor = 1;
+            let numberOfBuckets = bucketsToCalculate.length;
+            let svgHeight = window.innerHeight;
+            let svgWidth = window.innerWidth;
+
+            let gutterWidth = (svgWidth - (bucketWidth * bucketsToCalculate.length)) / (bucketsToCalculate.length + 1);
+
+            if (gutterWidth < 0) {
+                xScaleFactor = (bucketsToCalculate.length * (bucketWidth * 1.25) + (margins * 2)) / svgWidth;
+                gutterWidth = bucketWidth / 4;
+            }
+
+            for (let bucketIndex = 0; bucketIndex < bucketsToCalculate.length; bucketIndex++) {
+                bucketsToCalculate[bucketIndex].data.sort(function (a,b) {
+                    let personAFilters = filterPeople[a.Id];
+                    let personAString = personAFilters ? personAFilters.join(' ') : '';
+                    let personBFilters = filterPeople[b.Id];
+                    let personBString = personBFilters ? personBFilters.join(' ') : '';
+                    return personAString.localeCompare(personBString);
+                })
+
+                if ((bucketsToCalculate[bucketIndex].data.length / dotsPerRow) * dotRadius * 2 + (margins * 2) > svgHeight) {
+                    let newYScaleFactor = ((bucketsToCalculate[bucketIndex].data.length / dotsPerRow) * dotRadius * 2 + (margins * 2)) / svgHeight;
+                    yScaleFactor = Math.max(newYScaleFactor, yScaleFactor);
+                }
+
+                for (let i = 0; i < bucketsToCalculate[bucketIndex].data.length; i++) {
+                    bucketsToCalculate[bucketIndex].data[i].x = (i % dotsPerRow) * (dotRadius * 2) + dotRadius;
+                    bucketsToCalculate[bucketIndex].data[i].y = Math.floor(i / dotsPerRow) * (dotRadius * -2) - dotRadius;
+                }
+
+                bucketsToCalculate[bucketIndex].x = gutterWidth * (bucketIndex + 1) + (bucketWidth * bucketIndex);
+                bucketsToCalculate[bucketIndex].y = svgHeight - margins;
+            }
+
+            // Scale of the chart is too big for the screen
+            if (xScaleFactor > 1 || yScaleFactor > 1) {
+                let xIncrement = xScaleFactor > 1 && ((svgWidth * xScaleFactor) - svgWidth);
+                let yIncrement = yScaleFactor > 1 && ((svgHeight * yScaleFactor) - svgHeight);
+
+                scaleTop = -((svgHeight * yScaleFactor) - svgHeight);
+
+                d3.select('svg').attr('viewBox', `${0 - margins} ${0 - yIncrement} ${svgWidth + xIncrement} ${svgHeight + yIncrement}`);
+            }
+        }
+
+        const svg = d3.select('body').append('svg')
+            .style("width", "100%")
+            .style("height", "100vh");
+
+        calculatePositions(buckets);
+
+        // Render Filters
+        let svgFilters = svg.append('g')
+            .attr('class','filters')
+            .attr('transform',`translate(0, ${scaleTop + 50})`);
+
+        let svgFiltersEnter = svgFilters.selectAll('circle')
+            .data(filters).enter();
+            //.append('g').attr('class','filter');
+            
+        svgFiltersEnter.append('circle')
+                .attr('r', dotRadius)
+                .attr('cy', 0)
+                .attr('fill','#97002e')
+
+        svgFiltersEnter.append('text').text(function(d) {
+            return d;
+        }).attr('x', 25).attr('class','filter-text');
+
+        // Render Preview Box
+        svg.append('text').text('Woo!').attr('x', '0').attr('y', '100');
+
+        // Render title
+        svg.append('text').text('Family Shepherding Plan')
+            .attr('class', 'title')
+            .attr('x', '50%')
+            .attr('y', scaleTop + 50)
+            .attr('style', 'font-size: 18pt');
+
+
+        // Render buckets
+        let svgBuckets = svg.selectAll('g.bucket');
+        let svgBucketsEnter = svgBuckets.data(buckets)
+            .enter()
+            .append('g')
+            .attr('class', 'bucket')
+            .attr("transform", d => `translate(${d.x},${d.y})`);
+
+        svgBucketsEnter.append('g').attr('class', 'dots')
+
+        svgBucketsEnter.append('text').text(function (d) {
+            return d.name;
+        }).attr('x', bucketWidth / 2)
+            .attr('text-anchor', 'middle')
+            .attr('class', 'bucket-label')
+            .attr('y', 18)
+
+        svgBucketsEnter.append('line')
+            .attr('x1', '0')
+            .attr('x2', bucketWidth)
+            .attr('y1', '10')
+            .attr('y2', '10')
+            .attr('class', 'bucket-line')
+
+        let svgBucketDots = svgBucketsEnter.select('.dots').selectAll('circle').data(function (d) {
+            return d.data;
+        });
+
+        let svgBucketDotsEnter = svgBucketDots.enter()
+            .append('circle')
+            .attr('r', dotRadius)
+            .attr('class', function(d) {
+                if (filterPeople[d.Id]) {
+                    return 'dot '+filterPeople[d.Id].join(' ');
+                } else {
+                    return 'dot';
+                }
+            })
+            .attr('cx', function (d) { return d.x })
+            .attr('cy', function (d) { return d.y })
+
+        d3.selectAll('.dot').on('mouseover', function (d, i) {
+            d3.select('text').text(JSON.stringify(d));
+        })
+    }
+
+    let promises = [];
+
+    for (let dataView of dataViews) {
+        promises.push(fetch(`https://rock.christbaptist.org/api/People/DataView/${dataView.split(':')[0]}?$select=Id,NickName,LastName`, {credentials: "include"}));
+    }
+
+    for (let filter of filters) {
+        promises.push(fetch(`https://rock.christbaptist.org/api/People/DataView/${filter}?$select=Id`, {credentials: "include"}));
+    }
+
+    Promise.all(promises).then((responses) => {
+        let jsonPromises = responses.map((response) => response.json());
+        Promise.all(jsonPromises).then((parsedResponses) => {
+            let i = 0;
+            while (i < dataViews.length) {
+                buckets.push({
+                    name: dataViews[i].split(":")[1],
+                    data: parsedResponses[i]
+                })
+                i = i + 1;
+            }
+    
+            
+            while (i < parsedResponses.length) {
+                let responseIndex = 0;
+    
+                while (responseIndex < parsedResponses[i].length) {
+                    if (!filterPeople[parsedResponses[i][responseIndex].Id]) {
+                        filterPeople[parsedResponses[i][responseIndex].Id] = [];
+                    }
+                    filterPeople[parsedResponses[i][responseIndex].Id].push(`filter-${filters[i-dataViews.length]}`)
+                    responseIndex = responseIndex + 1;
+                }
+    
+                i = i + 1;
+            }
+    
+            drawChart();
+        })
+    })
+    
+
+</script>
+
+</html>

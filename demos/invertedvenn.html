@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Inverted Venn Chart</title>
+
+    <style>
+        body,
+        html {
+            margin: 0px;
+            padding: 0px;
+        }
+    </style>
+</head>
+
+<body style="background-color: #efefef;">
+
+</body>
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script src="/Scripts/main.js"></script>
+<script src="https://kit.fontawesome.com/6d42517843.js"></script>
+
+<script>
+    function generateArray(start, end) {
+        let array = [];
+        for (let i = start; i < end; i++) {
+            array.push({ Id: i });
+        }
+        return array;
+    }
+
+    new window.org_christbaptist.ColumnCircleChart("", "New Viz").setLavaSummary("Woo!").setBucketUrl('test')
+        .setEntityUrl('woo')
+        .addBucket({
+            Id: 1,
+            Name: "Bucket 1",
+            Order: 1,
+            Color: '#97002e',
+            data: generateArray(-50, 0)
+        })
+        .addBucket({
+            Id: 2,
+            Name: "Bucket 2",
+            Order: 2,
+            Color: '#005a40',
+            data: generateArray(0, 50)//.concat(generateArray(101, 360))
+        })
+        .addBucket({
+            Id: 3,
+            Name: "Bucket 2",
+            Order: 2,
+            Color: '#005a40',
+            data: generateArray(0, 50)//.concat(generateArray(101, 360))
+        })
+        .addBucket({
+            Id: 4,
+            Name: "Bucket 2",
+            Order: 2,
+            Color: '#005a40',
+            data: generateArray(0, 50)//.concat(generateArray(101, 360))
+        })
+        .addBucket({
+            Id: 5,
+            Name: "Bucket 2",
+            Order: 2,
+            Color: '#005a40',
+            data: generateArray(0, 50)//.concat(generateArray(101, 360))
+        })
+        .addBucket({
+            Id: 5,
+            Name: "Bucket 2",
+            Order: 2,
+            Color: '#005a40',
+            data: generateArray(0, 50)//.concat(generateArray(101, 360))
+        })
+        .addBucket({
+            Id: 6,
+            Name: "Bucket 3",
+            Order: 3,
+            Color: '#003763',
+            data: generateArray(0, 10)//.concat(generateArray(220, 680))
+        })
+        .addBucket({
+            Id: 7,
+            Name: "Bucket 3",
+            Order: 3,
+            Color: '#003763',
+            data: generateArray(0, 10)//.concat(generateArray(220, 680))
+        })
+        .addBucket({
+            Id: 8,
+            Name: "Bucket 3",
+            Order: 3,
+            Color: '#003763',
+            data: generateArray(0, 10)//.concat(generateArray(220, 680))
+        })
+        .addBucket({
+            Id: 9,
+            Name: "Bucket 3",
+            Order: 3,
+            Color: '#003763',
+            data: generateArray(0, 10)//.concat(generateArray(220, 680))
+        })
+        .addBucket({
+            Id: 10,
+            Name: "Bucket 3",
+            Order: 3,
+            Color: '#003763',
+            data: generateArray(0, 10)//.concat(generateArray(220, 680))
+        })
+        .addBucket({
+            Id: 11,
+            Name: "Bucket 3",
+            Order: 3,
+            Color: '#003763',
+            data: generateArray(0, 10)//.concat(generateArray(220, 680))
+        })
+        .addBucket({
+            Id: 12,
+            Name: "Bucket 3",
+            Order: 3,
+            Color: '#003763',
+            data: generateArray(0, 10)//.concat(generateArray(220, 680))
+        })
+        .addBucket({
+            Id: 13,
+            Name: "Bucket 3",
+            Order: 3,
+            Color: '#003763',
+            data: generateArray(0, 10)//.concat(generateArray(220, 680))
+        })
+        .addBucket({
+            Id: 14,
+            Name: "Bucket 3",
+            Order: 3,
+            Color: '#003763',
+            data: generateArray(0, 10)//.concat(generateArray(220, 680))
+        })
+        .addBucket({
+            Id: 15,
+            Name: "Bucket 3",
+            Order: 3,
+            Color: '#003763',
+            data: generateArray(0, 10)//.concat(generateArray(220, 680))
+        })
+        .addBucket({
+            Id: 16,
+            Name: "Bucket 3",
+            Order: 3,
+            Color: '#003763',
+            data: generateArray(0, 10)//.concat(generateArray(220, 680))
+        })
+        .addBucket({
+            Id: 17,
+            Name: "Bucket 3",
+            Order: 3,
+            Color: '#003763',
+            data: generateArray(0, 10)//.concat(generateArray(220, 680))
+        })
+        .addBucket({
+            Id: 18,
+            Name: "Bucket 3",
+            Order: 3,
+            Color: '#003763',
+            data: generateArray(0, 10)//.concat(generateArray(220, 680))
+        })
+        .addBucket({
+            Id: 19,
+            Name: "Bucket 3",
+            Order: 3,
+            Color: '#003763',
+            data: generateArray(0, 10)//.concat(generateArray(220, 680))
+        })
+        .addFilter({
+            Id: 1,
+            DisplayAs: "Test Filter",
+            ActiveByDefault: false,
+            Order: 1,
+            CSS: 'fill: blue',
+            data: [
+                { Id: 100 },
+                { Id: 2 },
+                { Id: 3 },
+                { Id: 4 },
+                { Id: 5 }
+            ]
+        }).addFilter({
+            Id: 2,
+            DisplayAs: "Test Filter 1",
+            ActiveByDefault: true,
+            CSS: 'fill: green',
+            Order: 2,
+            data: [
+                { Id: 101 },
+                { Id: 2 },
+                { Id: 3 },
+                { Id: 4 },
+                { Id: 5 },
+                { Id: 8 }
+            ]
+        })
+        .render();
+
+    let invertedVenn = new window.org_christbaptist.CircularVenn("", "New Viz");
+    invertedVenn.setLavaSummary("Woo!")
+        .addBucket({
+            Id: 1,
+            Name: "Bucket 1",
+            Order: 1,
+            Color: '#97002e',
+            data: generateArray(-200, 240)
+        })
+        .addBucket({
+            Id: 2,
+            Name: "Bucket 2",
+            Order: 2,
+            Color: '#005a40',
+            data: generateArray(0, 100).concat(generateArray(101, 360))
+        })
+        .addBucket({
+            Id: 3,
+            Name: "Bucket 3",
+            Order: 3,
+            Color: '#003763',
+            data: generateArray(0, 126).concat(generateArray(220, 680))
+        })
+        .addFilter({
+            Id: 1,
+            DisplayAs: "Test Filter",
+            ActiveByDefault: false,
+            Order: 1,
+            CSS: 'fill: blue',
+            data: [
+                { Id: 100 },
+                { Id: 2 },
+                { Id: 3 },
+                { Id: 4 },
+                { Id: 5 }
+            ]
+        }).addFilter({
+            Id: 2,
+            DisplayAs: "Test Filter 1",
+            ActiveByDefault: true,
+            CSS: 'fill: green',
+            Order: 2,
+            data: [
+                { Id: 101 },
+                { Id: 2 },
+                { Id: 3 },
+                { Id: 4 },
+                { Id: 5 },
+                { Id: 8 }
+            ]
+        })
+        .render();
+
+    let invertedVenn1 = new window.org_christbaptist.CircularVenn("", "New Viz");
+    invertedVenn1.setEntityUrl('/{{Id}}').setBucketUrl("/{{Id}}")
+    .addBucket({
+        Id: 1,
+        Name: "Bucket 1",
+        Order: 1,
+        Color: '#97002e',
+        data: generateArray(0, 50)
+    }).addBucket({
+        Id: 2,
+        Name: "Bucket 2",
+        Order: 2,
+        Color: '#005a40',
+        data: generateArray(20, 30).concat(generateArray(40, 50))
+    })
+        .addBucket({
+            Id: 3,
+            Name: "Bucket 3",
+            Order: 3,
+            Color: '#003763',
+            data: generateArray(0, 20).concat(generateArray(60, 80))
+        })
+        .addFilter({
+            Id: 1,
+            DisplayAs: "Test Filter",
+            ActiveByDefault: false,
+            Order: 1,
+            CSS: 'fill: yellow',
+            data: generateArray(-70, 50)
+        }).addFilter({
+            Id: 2,
+            DisplayAs: "Test Filter 1",
+            ActiveByDefault: true,
+            Order: 2,
+            CSS: 'fill: green',
+            data: generateArray(-70, 50)
+        })
+        .render();
+
+    let invertedVenn2 = new window.org_christbaptist.CircularVenn("", "New Viz");
+    invertedVenn2.addBucket({
+        Id: 1,
+        Name: "Bucket 1",
+        Order: 1,
+        Color: '#97002e',
+        data: generateArray(-200, 240)
+        // }).addBucket({
+        //     Id: 2,
+        //     Name: "Bucket 2",
+        //     Order: 2,
+        //     Color: '#005a40',
+        //     data: generateArray(0, 100).concat(generateArray(120, 150))
+    })
+        .addBucket({
+            Id: 3,
+            Name: "Bucket 3",
+            Order: 3,
+            Color: '#003763',
+            data: generateArray(0, 100).concat(generateArray(220, 380))
+        })
+        .addFilter({
+            Id: 1,
+            DisplayAs: "Test Filter",
+            ActiveByDefault: false,
+            Order: 1,
+            CSS: 'fill: blue',
+            data: [
+                { Id: 100 },
+                { Id: 2 },
+                { Id: 3 },
+                { Id: 4 },
+                { Id: 5 }
+            ]
+        }).addFilter({
+            Id: 2,
+            DisplayAs: "Test Filter 1",
+            ActiveByDefault: true,
+            Order: 2,
+            CSS: 'fill: red',
+            data: [
+                { Id: 101 },
+                { Id: 3 },
+                { Id: 4 },
+                { Id: 5 },
+                { Id: 8 }
+            ]
+        })
+        .render();
+
+    new window.org_christbaptist.CircularVenn("", "New Viz").addBucket({
+        Id: 1,
+        Name: "Bucket 1",
+        Order: 1,
+        Color: '#97002e',
+        data: generateArray(-200, 240)
+    }).setBucketUrl('test')
+        .addFilter({
+            Id: 1,
+            DisplayAs: "Test Filter",
+            ActiveByDefault: false,
+            Order: 1,
+            CSS: 'fill: blue',
+            data: [
+                { Id: 100 },
+                { Id: 2 },
+                { Id: 3 },
+                { Id: 4 },
+                { Id: 5 }
+            ]
+        }).addFilter({
+            Id: 2,
+            DisplayAs: "Test Filter 1",
+            ActiveByDefault: true,
+            Order: 2,
+            CSS: 'fill: red',
+            data: [
+                { Id: 101 },
+                { Id: 3 },
+                { Id: 4 },
+                { Id: 5 },
+                { Id: 8 }
+            ]
+        })
+        .render();
+
+</script>
+
+</html>
