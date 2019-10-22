@@ -104,12 +104,14 @@ export abstract class DotChart {
             let expandElement = this.el.getElementsByClassName('fa-expand')[0];
             expandElement.classList.remove('fa-expand');
             expandElement.classList.add('fa-compress');
+            this.rerender();
         } else {
             this.el.style.backgroundColor = "initial";
             let expandElement = this.el.getElementsByClassName('fa-compress')[0];
             this.el.querySelector('svg').style.height = "initial";
             expandElement.classList.remove('fa-compress');
             expandElement.classList.add('fa-expand');
+            this.rerender();
         }
     }
 
@@ -224,6 +226,10 @@ export abstract class DotChart {
     }
 
     renderFilterKey(x = 0, y = 0) {
+        if (this.svg.select('.filters').size()) {
+            this.svg.select('.filters').remove();
+        }
+
         let sortedFilters = this.filters.sort((filterA, filterB) => {
             return filterA.Order < filterB.Order ? -1 : 1;
         })
@@ -273,6 +279,10 @@ export abstract class DotChart {
      * Renders the title at the top of the scaled SVG Viewbox
      */
     renderTitle(x = 0, y = 0) {
+        if (this.svg.select('.visualization-title').size()) {
+            this.svg.select('.visualization-title').remove();
+        }
+
         // Render title
         this.svg.append('text').text(this.title)
             .attr('class', 'visualization-title')
@@ -364,13 +374,7 @@ export abstract class DotChart {
         this.el.style.height = null;
     }
 
-    /**
-     * Render
-     * 
-     * Override with specific chart implmentation, and then call this
-     * function to scale the chart and draw the filter key
-     */
-    render() {
+    rerender() {
         this.renderStyles();
 
         // Scale to fit
@@ -435,6 +439,16 @@ export abstract class DotChart {
         this.attachEventHandlers();
 
         this.disabledFilters.forEach((disabledFilterId) => this.hideFilter(disabledFilterId));
+    }
+
+    /**
+     * Render
+     * 
+     * Override with specific chart implmentation, and then call this
+     * function to scale the chart and draw the filter key
+     */
+    render() {
+        this.rerender();
     }
 
     hideFilter(filterId: string) {
