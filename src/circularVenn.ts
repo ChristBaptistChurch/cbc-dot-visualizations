@@ -1,6 +1,6 @@
 //import * as d3 from 'd3';
 import { Bucket, BucketWrapper, DotWrapper } from './bucket';
-import { DotChart } from './dotChart';
+import { DotChart, DotChartOptions } from './dotChart';
 import { style } from 'd3';
 
 declare var d3;
@@ -24,8 +24,8 @@ export class CircularVenn extends DotChart {
      * Constructor
      * @param svgId The ID of the SVG that already exists in DOM to attach to
      */
-    constructor(svgId?: string, title: string = "") {
-        super(svgId, title);
+    constructor(options?: DotChartOptions) {
+        super(options);
     }
 
     addBucket(bucket: Bucket): CircularVenn {

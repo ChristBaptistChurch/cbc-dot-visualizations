@@ -30,7 +30,10 @@
         return array;
     }
 
-    new window.org_christbaptist.ColumnCircleChart("", "New Viz").setLavaSummary("Woo!").setBucketUrl('test')
+    new window.org_christbaptist.ColumnCircleChart({
+            title: "New Viz",
+            selectionModeEnabled: true
+        }).setLavaSummary("Woo!").setBucketUrl('test')
         .setEntityUrl('woo')
         .addBucket({
             Id: 1,

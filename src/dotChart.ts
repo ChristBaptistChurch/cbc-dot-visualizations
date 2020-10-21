@@ -4,10 +4,16 @@ import { Bucket } from './bucket';
 import { BucketWrapper } from './bucket';
 import { getStyles } from './styles.css';
 import { Popup } from './popup';
-import { style } from 'd3';
+import { style, selection } from 'd3';
 import { totalmem } from 'os';
 
 declare var d3;
+
+export interface DotChartOptions {
+    attachToId?: string;
+    title?: string;
+    selectionModeEnabled?: boolean;
+}
 
 export abstract class DotChart {
     buckets: Bucket[] = [];
@@ -28,6 +34,9 @@ export abstract class DotChart {
     styleEl: HTMLStyleElement = null;
     summaryPane: Popup = null;
 
+    selectionMode: boolean = false;
+    selections: any[] = [];
+
     summaryPinned = false;
 
     _showFilterKey: boolean = true;
@@ -43,8 +52,9 @@ export abstract class DotChart {
         dotRadius: 10
     }
 
-    constructor(attachToId?: string, title: string = "") {
-        if (!attachToId) {
+    constructor(options: DotChartOptions) {
+
+        if (!options || !options.attachToId) {
             this.elementId = "vz" + Date.now();
             this.el = document.createElement('div');
             this.el.id = this.elementId;
@@ -55,8 +65,8 @@ export abstract class DotChart {
 
             scriptTag.parentNode.insertBefore(this.el, scriptTag);
         } else {
-            this.el = document.getElementById(attachToId);
-            this.elementId = attachToId;
+            this.el = document.getElementById(options.attachToId);
+            this.elementId = options.attachToId;
         }
 
         // Add Lava Summary dialog
@@ -68,12 +78,46 @@ export abstract class DotChart {
         this.toolbar = document.createElement('div');
         this.toolbar.className = "toolbar";
 
+
+        if (options && options.selectionModeEnabled) {
+            let selectionModeButton = document.createElement('div');
+            selectionModeButton.innerHTML = '<i class="fa fa-tasks"></i>';
+            selectionModeButton.onclick = this.toggleSelectionMode.bind(this);
+            selectionModeButton.onmouseover = this.showSelections.bind(this);
+            selectionModeButton.onmouseout = this.hideSelections.bind(this);
+            selectionModeButton.className = "button selection-mode";
+            selectionModeButton.style.backgroundColor = "transparent";
+            this.toolbar.append(selectionModeButton);
+
+            let selectionModePane = document.createElement('div');
+            selectionModePane.className = "selection-pane";
+            selectionModePane.innerHTML = `<div class='toolbar'>
+                    <a id="" title="Communicate" class="btn-communicate btn btn-default btn-sm">
+                        <i class="fa fa-comment fa-fw"></i>
+                    </a>
+                    <a id="" title="Merge Person Records" class="btn-merge btn btn-default btn-sm">
+                    <i class="fa fa-users fa-fw"></i>
+                    </a>
+                    <a id="" title="Bulk Update" class="btn-bulk-update btn btn-default btn-sm">
+                    <i class="fa fa-truck fa-fw"></i></a>
+                    <a id="" title="Export to Excel" class="btn-excelexport btn btn-default btn-sm">
+                    <i class="fa fa-table fa-fw"></i></a>
+                    <a id="" title="Merge Records into Merge Template" class="btn-merge-template btn btn-default btn-sm">
+                    <i class="fa fa-files-o fa-fw"></i></a>
+                </div> 
+                <div class='body'></div>`;
+            selectionModePane.onmouseover = this.showSelections.bind(this);
+            selectionModePane.onmouseout = this.hideSelections.bind(this);
+            this.el.append(selectionModePane);
+        }
+
         let fullScreenButton = document.createElement('div');
         fullScreenButton.innerHTML = '<i class="fa fa-expand"></i>';
         fullScreenButton.onclick = this.goFullscreen.bind(this);
         fullScreenButton.className = "button";
         fullScreenButton.style.backgroundColor = "transparent";
         this.toolbar.append(fullScreenButton);
+
         this.el.append(this.toolbar);
 
         // Add style el
@@ -85,7 +129,7 @@ export abstract class DotChart {
         this.el.append(newSVGEl);
         this.el.insertBefore(this.styleEl, newSVGEl);
         this.svg = d3.select(newSVGEl);
-        this.title = title;
+        this.title = (options && options.title) || "";
 
         this.el.addEventListener("fullscreenchange", this.onFullScreen.bind(this));
 
@@ -122,6 +166,45 @@ export abstract class DotChart {
             document.exitFullscreen();
         }
     }
+
+    toggleSelectionMode() {
+        let confirmed = true;
+        if (this.selectionMode && this.selections.length) {
+            confirmed = confirm('You have entities selected. Are you sure you want to turn off selection mode?');
+        }
+
+        if (confirmed) {
+            this.selectionMode = !this.selectionMode;
+            if (this.selectionMode == true) {
+                (<HTMLElement>this.toolbar.querySelector('.selection-mode')).style.backgroundColor = 'orange';
+            } else {
+                (<HTMLElement>this.toolbar.querySelector('.selection-mode')).style.backgroundColor = 'transparent';
+            }
+        }
+    }
+
+    toggleSelection(d: {Id: number}) {
+        let existingSelection = this.selections.find((value) => value = d.Id);
+
+        if (existingSelection) {
+            this.selections = this.selections.filter((value) => value != d.Id);
+        } else {
+            this.selections.push(d.Id);
+        }
+    }
+
+    showSelections() {
+        if (this.selectionMode) {
+            let selectionPane = this.el.querySelector('.selection-pane');
+            selectionPane.classList.add('open');
+        }
+    }
+    
+    hideSelections() {
+        let selectionPane = this.el.querySelector('.selection-pane');
+        selectionPane.classList.remove('open');
+    }
+
 
     addBucket(bucket: Bucket): DotChart {
         this.buckets.push(bucket);
@@ -307,24 +390,36 @@ export abstract class DotChart {
         }).join(" ");
     }
 
+    dotClicked(d: any) {
+        if (this.selectionMode) {
+            this.toggleSelection(d.data);
+            return;
+        }
+
+        if (this.lavaTemplate && !this.selectionMode) {
+            this.summaryPane.pin();
+            if (this.summaryPane.entity != d.data)
+                this.summaryPane.show({ x: (<MouseEvent>event).clientX, y: (<MouseEvent>event).clientY }, this.fetchLavaData(d.data.Id), d.data);
+        }
+    }
+
     attachEventHandlers() {
         let dots = this.svg.selectAll('.dot');
 
         if (this.lavaTemplate) {
             dots.on('mouseover', (d: any) => {
+                console.log("mouseover");
                 this.summaryPane.preview({ x: (<MouseEvent>event).clientX, y: (<MouseEvent>event).clientY }, this.fetchLavaData(d.data.Id), d.data);
             });
 
             dots.on('mouseout', (d, i) => {
+                console.log("mouseover");
                 this.summaryPane.hide();
             })
 
-            dots.on('click', (d: any) => {
-                this.summaryPane.pin();
-                if (this.summaryPane.entity != d.data)
-                    this.summaryPane.show({ x: (<MouseEvent>event).clientX, y: (<MouseEvent>event).clientY }, this.fetchLavaData(d.data.Id), d.data);
-            });
         }
+
+        dots.on('click', this.dotClicked.bind(this));
 
         if (this.entityUrl) {
             dots.on('dblclick', (d: any) => {

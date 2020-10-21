@@ -1,12 +1,142 @@
-import { Bucket } from './bucket';
-import { DotChart } from './dotChart';
+import { Bucket, BucketWrapper, DotWrapper } from './bucket';
+import { DotChart, DotChartOptions } from './dotChart';
 import { Filter } from './filter';
 
 window['d3'] = require('d3');
 
 class MyDotChart extends DotChart {
-    constructor(svgId?: string, title: string = "") {
-        super(svgId, title);
+    constructor(options?: DotChartOptions) {
+        super(options);
+    }
+
+    dotRadius: number;
+    dotsPerRow: number;
+
+    renderBucketChart() {
+        const bucketWidth = this.dotsPerRow * this.dotRadius * 2;
+
+        let scaleTop = 0;
+        let svgEl: SVGGraphicsElement = <SVGGraphicsElement>this.svg.node();
+        svgEl.style.width = "100%";
+
+        let calculatePositions = (buckets: Bucket[]): BucketWrapper[] => {
+            let bucketWrappers: BucketWrapper[] = [];
+
+            let numberOfBuckets = buckets.length;
+            let svgHeight = svgEl.getBoundingClientRect().height;
+            let svgWidth = svgEl.getBoundingClientRect().width;
+
+            // The gutter width will be however much space is left over after removing the width of all buckets / number of buckets + 1
+            let gutterWidth = (svgWidth - (bucketWidth * buckets.length)) / (buckets.length + 1);
+
+            // If there are too many buckets to fit on the SVG, scale the SVG width
+            if (gutterWidth < 0) {
+                // At this point, we're scaling to fit, so we can just set the gutter to a comfortable width
+                gutterWidth = bucketWidth / 4;
+            }
+
+            this.xcenter = ((bucketWidth * buckets.length) + (gutterWidth * (buckets.length - 1))) / 2;
+
+            for (let bucketIndex = 0; bucketIndex < buckets.length; bucketIndex++) {
+                // Sort the group members by filters, so all of a paritcular stripe appear together
+                buckets[bucketIndex].data.sort((a, b) => {
+                    let personAFilters = this.filtersForEntity[a.Id];
+                    let personAString = personAFilters ? personAFilters.join(' ') : '';
+                    let personBFilters = this.filtersForEntity[b.Id];
+                    let personBString = personBFilters ? personBFilters.join(' ') : '';
+                    return personAString.localeCompare(personBString);
+                })
+
+                let bucketWrapper: BucketWrapper = {
+                    x: 0,
+                    y: 0,
+                    children: [],
+                    data: buckets[bucketIndex]
+                }
+
+                // Position the dots in this bucket
+                for (let i = 0; i < buckets[bucketIndex].data.length; i++) {
+                    bucketWrapper.children.push(<DotWrapper>{
+                        x: (i % this.dotsPerRow) * (this.dotRadius * 2) + this.dotRadius,
+                        y: Math.floor(i / this.dotsPerRow) * (this.dotRadius * -2) - this.dotRadius,
+                        data: buckets[bucketIndex].data[i]
+                    });
+                }
+
+                // Position the bucket itself
+                bucketWrapper.x = gutterWidth * (bucketIndex) + (bucketWidth * bucketIndex);
+                bucketWrapper.y = svgHeight;// - this.margins;
+
+                bucketWrappers.push(bucketWrapper);
+            }
+
+            return bucketWrappers;
+        }
+
+        let data: BucketWrapper[] = calculatePositions(this.buckets);
+
+        // Render buckets
+        let svgBucketsEnter = this.svg.selectAll('g.bucket').data(data)
+            .enter()
+            .append('g')
+            .attr('class', 'bucket')
+            .attr("transform", d => `translate(${d.x},${d.y})`);
+
+        svgBucketsEnter.append('g').attr('class', 'dots')
+
+        let base = svgBucketsEnter.append('g').attr('class', 'base');
+        base.append('text').text(function (d) {
+            return d.data.DisplayAs || d.data.Name + ' (' + d.children.length + ')';
+        }).attr('x', bucketWidth / 2)
+            .attr('text-anchor', 'middle')
+            .attr('class', 'bucket-label')
+            .attr('y', 18)
+
+        base.append('line')
+            .attr('x1', '0')
+            .attr('x2', bucketWidth)
+            .attr('y1', '10')
+            .attr('y2', '10')
+            .attr('class', 'bucket-line')
+
+        let svgBucketDots = svgBucketsEnter.select('.dots').selectAll('circle').data(function (d) {
+            return d.children;
+        });
+
+        let that = this;
+
+        let svgBucketDotsEnter = svgBucketDots.enter()
+            .append('circle')
+            .attr('r', this.dotRadius)
+            .attr('class', function (d: DotWrapper, i, el) {
+                return that.attachFilters.call(that, this, d)
+            })
+            .attr('cx', function (d) { return d.x })
+            .attr('cy', function (d) { return d.y })
+    }
+
+    render() {
+        if (!this.buckets || !this.buckets.length) {
+            let noDataEl = document.createElement('div');
+            noDataEl.style.textAlign = "center";
+            noDataEl.innerHTML = "No data defined."
+            this.el.insertBefore(noDataEl, <Node>this.svg.node());
+        } else {
+
+            this.svg.selectAll("*").remove();
+            this.svg.append('def');
+
+            const dotRadius = 10;
+            const dotsPerRow = 10;
+
+            const margins = 100;
+
+            super.prerender();
+
+            this.renderBucketChart();
+        }
+
+        super.render();
     }
 }
 
@@ -65,7 +195,7 @@ describe("DotChart", function () {
     });
 
     it('should attach to the passed ID', () => {
-        let dotChart = new MyDotChart("mychart");
+        let dotChart = new MyDotChart({ attachToId: "mychart" });
 
         expect(dotChart.el).toBe(<any>container);
     });
@@ -73,7 +203,7 @@ describe("DotChart", function () {
     it('should throw an error if the SVG does not exist', () => {
         document.body.removeChild(container);
 
-        expect(() => { new MyDotChart("mychart") }).toThrow();
+        expect(() => { new MyDotChart({ attachToId: "mychart" }) }).toThrow();
 
         document.body.append(container);
     });
@@ -92,6 +222,76 @@ describe("DotChart", function () {
         let dotChart = new MyDotChart();
 
         expect(document.getElementsByTagName('style').length).toBe(1);
+    });
+
+    it('should show a selection mode button if selection mode is enabled', () => {
+        let dotChart = new MyDotChart({
+            selectionModeEnabled: true
+        });
+
+        expect(dotChart.el.querySelectorAll('.toolbar .button.selection-mode').length).toBe(1);
+    });
+
+    describe('Selection Mode', () => {
+        let dotChart: MyDotChart;
+        beforeEach(() => {
+            dotChart = new MyDotChart({
+                selectionModeEnabled: true
+            });
+
+            dotChart
+                .addBucket(sampleBucket)
+                .addBucket(sampleBucket2);
+        });
+
+        it('should toggle selection mode when the toolbar button is clicked', () => {
+            expect(dotChart.selectionMode).toBe(false);
+
+            (<HTMLElement>dotChart.el.querySelector('.button.selection-mode')).click();
+
+            expect(dotChart.selectionMode).toBe(true);
+        });
+
+        it('should be indicated by the color of the toolbar button', () => {
+            expect((<HTMLElement>dotChart.el.querySelector('.button.selection-mode')).style.backgroundColor).toBe("transparent");
+            (<HTMLElement>dotChart.el.querySelector('.button.selection-mode')).click();
+            expect((<HTMLElement>dotChart.el.querySelector('.button.selection-mode')).style.backgroundColor).toBe("orange");
+            (<HTMLElement>dotChart.el.querySelector('.button.selection-mode')).click();
+            expect((<HTMLElement>dotChart.el.querySelector('.button.selection-mode')).style.backgroundColor).toBe("transparent");
+        });
+        
+        it('should add a dot to the selection when clicked (instead of pinning dialog)', () => {
+            dotChart.render();
+            dotChart.toggleSelectionMode();
+            
+            var event = new MouseEvent('click', {
+                view: window,
+                bubbles: true,
+                cancelable: true
+              });
+
+            (<HTMLElement>dotChart.el.querySelector('.dot')).dispatchEvent(event);
+
+            let circle = dotChart.svg.select('.dot');
+
+            expect(dotChart.selections.length).toBe(1);
+            expect(dotChart.selections[0]).toEqual((<any>circle.data()[0]).data.Id);
+
+            (<HTMLElement>dotChart.el.querySelector('.dot')).dispatchEvent(event);
+            expect(dotChart.selections.length).toBe(0);
+        });
+
+        it('should show a list of selected entities when hovering over the toolbar button', () => {
+            // MANUAL: The mouse hover itself cannot be automated due to browser restrictions
+
+            
+        });
+        
+
+        it('should indicate selected dots by growing them', () => {
+            // And removing the hover
+            // Edge case: when the same person is selected in different groups
+        });
     });
 
     // it('should toggle filters when you click on the key', () => {
@@ -139,7 +339,7 @@ describe("DotChart", function () {
     // });
 
     it('should hide disabled filters by default', () => {
-        let dotChart = new MyDotChart("mychart");
+        let dotChart = new MyDotChart({ attachToId: "mychart" });
 
         dotChart.addFilter({
             Id: '1',
@@ -161,6 +361,40 @@ describe("DotChart", function () {
 
         expect(dotChart.disabledFilters).toEqual(['1']);
         expect(dotChart.svg.select('.filter.disabled').size()).toBe(1);
+    });
+
+    describe('toggleSelection', () => {
+        it('should flip the selectionMode', () => {
+            let dotChart = new MyDotChart({
+                selectionModeEnabled: true
+            });
+
+            expect(dotChart.selectionMode).toBe(false);
+
+            dotChart.toggleSelectionMode();
+            expect(dotChart.selectionMode).toBeTruthy();
+
+            dotChart.toggleSelectionMode();
+            expect(dotChart.selectionMode).toBeFalsy();
+        });
+
+        it('should confirm if turning off selection mode and selection is not empty', () =>{
+            spyOn(window,'confirm').and.returnValue(false);
+            
+            let dotChart = new MyDotChart({
+                selectionModeEnabled: true
+            });
+
+            dotChart.toggleSelectionMode();
+            dotChart.selections = [1,2,3];
+
+            dotChart.toggleSelectionMode();
+            expect(dotChart.selectionMode).toBeTruthy();
+            
+            (<jasmine.Spy>window.confirm).and.returnValue(true);
+            dotChart.toggleSelectionMode();
+            expect(dotChart.selectionMode).toBeFalsy();
+        })
     });
 
     describe('addBucket', () => {
@@ -198,7 +432,7 @@ describe("DotChart", function () {
         });
 
         it('it should add/remove the filter class from elements representing filter entities', () => {
-            let dotChart = new MyDotChart("mychart");
+            let dotChart = new MyDotChart({ attachToId: "mychart" });
 
             dotChart.filtersForEntity[1] = ['1', '2'];
 
@@ -272,7 +506,7 @@ describe("DotChart", function () {
             svgElement.id = "svgChart"
             document.body.append(svgElement);
 
-            let dotChart = new MyDotChart("svgChart");
+            let dotChart = new MyDotChart({attachToId: "svgChart"});
 
             dotChart.addFilter({
                 DisplayAs: "Test",
@@ -301,7 +535,7 @@ describe("DotChart", function () {
         });
 
         it('should attach event handlers', () => {
-            let dotChart = new MyDotChart("mychart");
+            let dotChart = new MyDotChart({ attachToId: "mychart" });
 
             spyOn(dotChart, 'attachEventHandlers');
 
@@ -311,7 +545,7 @@ describe("DotChart", function () {
         });
 
         it('should render the filter key (if any filters) in the top left corner', () => {
-            let dotChart = new MyDotChart("mychart");
+            let dotChart = new MyDotChart({ attachToId: "mychart" });
 
             dotChart.xcenter = 50;
 
@@ -335,7 +569,7 @@ describe("DotChart", function () {
         });
 
         it('should render the title', () => {
-            let dotChart = new MyDotChart("mychart", "New Vis");
+            let dotChart = new MyDotChart({ attachToId: "mychart", title: "New Vis"});
 
             spyOn(dotChart, 'renderTitle');
 
@@ -344,7 +578,7 @@ describe("DotChart", function () {
         });
 
         it('should call toggleFilter with disabled filters', () => {
-            let dotChart = new MyDotChart("mychart", "New Vis");
+            let dotChart = new MyDotChart({ attachToId: "mychart", title: "New Vis"});
 
             dotChart.disabledFilters = ['1', '2', '3', '4'];
 
@@ -357,7 +591,7 @@ describe("DotChart", function () {
 
     describe('renderTitle', () => {
         it('should add a text object in the top, center of SVG', () => {
-            let dotChart = new MyDotChart("mychart", "My Chart");
+            let dotChart = new MyDotChart({ attachToId: "mychart" , title: "My Chart"});
 
             dotChart.renderTitle();
 
@@ -367,7 +601,7 @@ describe("DotChart", function () {
 
     describe('renderStyles', () => {
         it('should set a style for the div to be 100% width and 100vh', () => {
-            let dotChart = new MyDotChart("mychart");
+            let dotChart = new MyDotChart({ attachToId: "mychart" });
 
             dotChart.renderStyles();
 
@@ -477,7 +711,7 @@ describe("DotChart", function () {
                 ]
             });
 
-            expect(dotChart.getBucketHTMLSummary(<any>{ data: sampleBucket })).toContain(`<td style="font-weight: bold;">Test Filter:</td><td>2 (67%)</td>`);
+            expect(dotChart.getBucketHTMLSummary(<any>{ data: sampleBucket })).toContain(`<td style="font-weight: bold;">Test Filter:</td><td>2</td><td>(67%)</td>`);
         });
 
         describe('attachFilters', () => {

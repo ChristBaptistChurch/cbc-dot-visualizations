@@ -187,6 +187,31 @@ export function getStyles(elementId) {
                 cursor: pointer;
                 line-height: 40px;
             }
-        
+
+            #${elementId} .selection-pane {
+                box-shadow: 0px 2px 5px black;
+                height: 0vh;
+                transition: height 1s;
+                position: absolute;
+                top: 45px;
+                right: 10px;
+                width: 250px;
+                background-color: #efefef;
+                overflow: hidden;
+            }
+
+            #${elementId} .selection-pane.open {
+                height: 50vh;
+                
+            }
+
+            #${elementId} .selection-pane .toolbar {
+                padding-top: 10px;
+                padding-right: 10px;                
+            }
+
+            #${elementId} .selection-pane .toolbar a {
+                padding: 5px;               
+            }
         `;
 }

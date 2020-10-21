@@ -282,7 +282,8 @@ describe('CircularVenn', () => {
         });
 
         it('should require at least one bucket', () => {
-            expect(() => { dotChart.render() }).toThrow();
+            dotChart.render();
+            expect(dotChart.el.innerHTML).toContain('No data defined.')
         });
 
         it('should calculate all buckets for the Venn', () => {

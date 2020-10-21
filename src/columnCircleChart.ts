@@ -1,4 +1,4 @@
-import { DotChart } from './dotChart';
+import { DotChart, DotChartOptions } from './dotChart';
 import { Bucket, BucketWrapper, DotWrapper } from './bucket';
 
 declare var d3;
@@ -18,8 +18,8 @@ export class ColumnCircleChart extends DotChart {
      * Constructor
      * @param svgId The ID of the SVG that already exists in DOM to attach to
      */
-    constructor(svgId?: string, title: string = "") {
-        super(svgId, title);
+    constructor(options?: DotChartOptions) {
+        super(options);
 
         let styleSelector = document.createElement('div');
         styleSelector.className = "group";
